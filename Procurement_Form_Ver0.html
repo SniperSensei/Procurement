@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone Parts Procurement Request Form</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl border border-gray-200">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Drone Parts Procurement Request</h2>
+
+        <!-- Message area for success/error -->
+        <div id="formMessage" class="hidden p-3 mb-4 rounded-lg text-center text-sm font-medium"></div>
+
+        <!-- IMPORTANT: Replace "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE" with your actual deployed Google Apps Script Web App URL -->
+        <form id="procurementForm" method="POST" action="https://script.google.com/macros/s/AKfycbxn3MbxMQLfovJdEjIPZcoN7aa-mt2cAmG8i3OAhBFunZPjp5LuPzVVt_yd6YSJN6dJ/exec">
+            <div id="itemsContainer">
+                <!-- Initial Item Entry -->
+                <div class="item-entry bg-gray-50 p-6 rounded-lg mb-6 border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Item #1</h3>
+                    <!-- Item Selection -->
+                    <div class="mb-5">
+                        <label for="item-1" class="block text-gray-700 text-sm font-medium mb-2">Select Drone Part:</label>
+                        <select id="item-1" name="item[]" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out bg-white text-gray-800 shadow-sm" required>
+                            <option value="">-- Please choose a drone part --</option>
+                            <option value="drone-frame">Drone Frame</option>
+                            <option value="motors">Motors</option>
+                            <option value="propellers">Propellers</option>
+                            <option value="flight-controller">Flight Controller</option>
+                            <option value="battery">Battery</option>
+                            <option value="camera">Camera</option>
+                            <option value="gps-module">GPS Module</option>
+                            <option value="esc">ESC (Electronic Speed Controller)</option>
+                            <option value="receiver">Receiver</option>
+                            <option value="other-drone-part">Other Drone Part</option>
+                        </select>
+                    </div>
+
+                    <!-- Quantity Input -->
+                    <div class="mb-5">
+                        <label for="quantity-1" class="block text-gray-700 text-sm font-medium mb-2">Quantity:</label>
+                        <input type="number" id="quantity-1" name="quantity[]" min="1" value="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out text-gray-800 shadow-sm" required>
+                    </div>
+
+                    <!-- Specifications Textarea -->
+                    <div class="mb-6">
+                        <label for="specifications-1" class="block text-gray-700 text-sm font-medium mb-2">Specifications / Details:</label>
+                        <textarea id="specifications-1" name="specifications[]" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out resize-y text-gray-800 shadow-sm" placeholder="e.g., Size, KV rating, material, voltage, brand, specific model, etc."></textarea>
+                    </div>
+                    <!-- Remove button (hidden for the first item initially) -->
+                    <button type="button" class="remove-item-btn hidden w-full bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out font-semibold text-base">
+                        Remove Item
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add Another Item Button -->
+            <button type="button" id="addItemBtn" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200 ease-in-out font-semibold text-lg shadow-md mb-4">
+                Add Another Item
+            </button>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 ease-in-out font-semibold text-lg shadow-md">
+                Submit Procurement Request
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const itemsContainer = document.getElementById('itemsContainer');
+            const addItemBtn = document.getElementById('addItemBtn');
+            const formMessage = document.getElementById('formMessage');
+            const procurementForm = document.getElementById('procurementForm');
+            const submitBtn = document.getElementById('submitBtn');
+            let itemCount = 1; // Tracks the number of items
+
+            // Function to update item numbers and show/hide remove buttons
+            function updateItemNumbers() {
+                const itemEntries = itemsContainer.querySelectorAll('.item-entry');
+                itemEntries.forEach((entry, index) => {
+                    const h3 = entry.querySelector('h3');
+                    if (h3) {
+                        h3.textContent = `Item #${index + 1}`;
+                    }
+                    const removeBtn = entry.querySelector('.remove-item-btn');
+                    if (removeBtn) {
+                        // Show remove button for all items except the first one, and only if form is enabled
+                        if (itemEntries.length > 1 && index > 0 && !submitBtn.disabled) { // Check if form is not disabled
+                            removeBtn.classList.remove('hidden');
+                        } else {
+                            removeBtn.classList.add('hidden');
+                        }
+                    }
+                });
+            }
+
+            // Function to set the form's enabled/disabled state
+            function setFormState(enabled) {
+                const allFormControls = procurementForm.querySelectorAll('select, input:not([type="hidden"]), textarea');
+                allFormControls.forEach(element => {
+                    element.disabled = !enabled;
+                    if (!enabled) {
+                        element.classList.add('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        element.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                });
+
+                // Handle main buttons
+                submitBtn.disabled = !enabled;
+                addItemBtn.disabled = !enabled;
+
+                if (!enabled) {
+                    submitBtn.textContent = 'Submitted!';
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    addItemBtn.style.display = 'none'; // Hide Add Item button
+                } else {
+                    submitBtn.textContent = 'Submit Procurement Request';
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    addItemBtn.style.display = 'block'; // Show Add Item button
+                }
+
+                // Handle remove buttons within item entries
+                const removeItemBtns = itemsContainer.querySelectorAll('.remove-item-btn');
+                removeItemBtns.forEach(btn => {
+                    btn.disabled = !enabled;
+                    if (!enabled) {
+                        btn.style.display = 'none'; // Hide remove buttons when form is disabled
+                    } else {
+                        // Show remove button based on updateItemNumbers logic
+                        btn.style.display = 'block';
+                    }
+                });
+                updateItemNumbers(); // Re-evaluate remove button visibility based on counts and enabled state
+            }
+
+            // Initial update to ensure first item's remove button is hidden
+            updateItemNumbers();
+
+            addItemBtn.addEventListener('click', function() {
+                itemCount++; // Increment item counter for unique IDs
+
+                // Create a new item entry element
+                const newItemEntry = document.createElement('div');
+                newItemEntry.classList.add('item-entry', 'bg-gray-50', 'p-6', 'rounded-lg', 'mb-6', 'border', 'border-gray-200');
+                newItemEntry.innerHTML = `
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Item #${itemCount}</h3>
+                    <!-- Item Selection -->
+                    <div class="mb-5">
+                        <label for="item-${itemCount}" class="block text-gray-700 text-sm font-medium mb-2">Select Drone Part:</label>
+                        <select id="item-${itemCount}" name="item[]" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out bg-white text-gray-800 shadow-sm" required>
+                            <option value="">-- Please choose a drone part --</option>
+                            <option value="drone-frame">Drone Frame</option>
+                            <option value="motors">Motors</option>
+                            <option value="propellers">Propellers</option>
+                            <option value="flight-controller">Flight Controller</option>
+                            <option value="battery">Battery</option>
+                            <option value="camera">Camera</option>
+                            <option value="gps-module">GPS Module</option>
+                            <option value="esc">ESC (Electronic Speed Controller)</option>
+                            <option value="receiver">Receiver</option>
+                            <option value="other-drone-part">Other Drone Part</option>
+                        </select>
+                    </div>
+
+                    <!-- Quantity Input -->
+                    <div class="mb-5">
+                        <label for="quantity-${itemCount}" class="block text-gray-700 text-sm font-medium mb-2">Quantity:</label>
+                        <input type="number" id="quantity-${itemCount}" name="quantity[]" min="1" value="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out text-gray-800 shadow-sm" required>
+                    </div>
+
+                    <!-- Specifications Textarea -->
+                    <div class="mb-6">
+                        <label for="specifications-${itemCount}" class="block text-gray-700 text-sm font-medium mb-2">Specifications / Details:</label>
+                        <textarea id="specifications-${itemCount}" name="specifications[]" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out resize-y text-gray-800 shadow-sm" placeholder="e.g., Size, KV rating, material, voltage, brand, specific model, etc."></textarea>
+                    </div>
+                    <button type="button" class="remove-item-btn w-full bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out font-semibold text-base">
+                        Remove Item
+                    </button>
+                `;
+                itemsContainer.appendChild(newItemEntry);
+                updateItemNumbers(); // Update numbers and button visibility after adding
+            });
+
+            // Event delegation for remove item buttons
+            itemsContainer.addEventListener('click', function(event) {
+                if (event.target.classList.contains('remove-item-btn')) {
+                    const itemEntry = event.target.closest('.item-entry');
+                    if (itemEntry) {
+                        itemEntry.remove();
+                        updateItemNumbers(); // Update numbers and button visibility after removing
+                    }
+                }
+            });
+
+            // Handle form submission using fetch to avoid page reload
+            procurementForm.addEventListener('submit', async function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                formMessage.classList.add('hidden'); // Hide previous messages
+                formMessage.classList.remove('bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+                
+                // Show submitting state
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+                let targetUrl;
+                try {
+                    // Attempt to parse the URL to catch invalid formats early
+                    targetUrl = new URL(procurementForm.action);
+                } catch (urlError) {
+                    console.error("URL parsing error:", urlError);
+                    formMessage.textContent = 'Error: The form\'s action URL is invalid. Please ensure it is a complete and correct Google Apps Script Web App URL.';
+                    formMessage.classList.remove('hidden');
+                    formMessage.classList.add('bg-red-100', 'text-red-800');
+                    setFormState(true); // Re-enable form to allow user to fix URL
+                    return; // Stop the submission process
+                }
+
+                const formData = new FormData(procurementForm);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    if (key.endsWith('[]')) {
+                        const baseKey = key.slice(0, -2);
+                        if (!data[baseKey]) {
+                            data[baseKey] = [];
+                        }
+                        data[baseKey].push(value);
+                    } else {
+                        data[key] = value;
+                    }
+                }
+
+                const payload = {
+                    items: data.item.join('|||'),
+                    quantities: data.quantity.join('|||'),
+                    specifications: data.specifications.join('|||')
+                };
+
+                try {
+                    const response = await fetch(targetUrl.href, { // Use targetUrl.href here
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams(payload).toString()
+                    });
+
+                    // On successful submission:
+                    formMessage.textContent = 'Thank you for submitting the form!';
+                    formMessage.classList.remove('hidden');
+                    formMessage.classList.add('bg-green-100', 'text-green-800');
+
+                    // Disable all form fields and buttons, hide add/remove buttons
+                    setFormState(false);
+
+                } catch (error) {
+                    console.error('Error submitting form:', error);
+                    formMessage.textContent = 'Failed to submit request. Please try again.';
+                    formMessage.classList.remove('hidden');
+                    formMessage.classList.add('bg-red-100', 'text-red-800');
+
+                    // Re-enable the form on error so the user can try again
+                    setFormState(true);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
